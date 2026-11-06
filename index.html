@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Multivac 3: Pensar en Paralelo - Ley de Amdahl vs Ley de Gustafson</title>
-    <!-- Tailwind CSS CDN -->
+    <title>Multivac 3: Ley de Amdahl vs. Ley de Gustafson</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -12,643 +12,378 @@
             theme: {
                 extend: {
                     colors: {
-                        cyber: {
-                            dark: '#0a0e17',
-                            card: '#111827',
-                            border: '#1f293d',
-                            accent: '#10b981',
-                            amdahl: '#f43f5e',
-                            gustafson: '#3b82f6',
-                            neon: '#06b6d4'
+                        brand: {
+                            50: '#f0f9ff',
+                            500: '#0284c7',
+                            600: '#0369a1',
+                            900: '#0c4a6e',
                         }
-                    },
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                        mono: ['JetBrains Mono', 'Fira Code', 'monospace']
                     }
                 }
             }
         }
     </script>
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Chart.js CDN -->
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        body {
-            background-color: #060911;
-            color: #e2e8f0;
-            font-family: 'Inter', sans-serif;
-        }
-        .glow-amdahl {
-            box-shadow: 0 0 15px rgba(244, 63, 94, 0.25);
-        }
-        .glow-gustafson {
-            box-shadow: 0 0 15px rgba(59, 130, 246, 0.25);
-        }
-        .glow-neon {
-            box-shadow: 0 0 15px rgba(6, 182, 212, 0.25);
-        }
-        input[type=range] {
-            accent-color: #06b6d4;
-        }
-        /* Custom scrollbar */
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #0a0e17;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #1e293b;
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #334155;
-        }
-    </style>
+    <!-- MathJax Library para renderizado de LaTeX -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            svg: {
+                fontCache: 'global'
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 </head>
-<body class="min-h-screen flex flex-col justify-between antialiased selection:bg-cyan-500 selection:text-black">
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans">
 
-    <!-- Header Navigation / Banner -->
-    <header class="border-b border-gray-800 bg-gray-950/80 backdrop-blur sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap items-center justify-between gap-4">
-            <div class="flex items-center gap-3">
-                <div class="p-2 bg-gradient-to-tr from-cyan-500 to-blue-600 rounded-lg text-black font-bold text-xl shadow-lg shadow-cyan-500/20">
-                    <i class="fa-solid fa-microchip"></i>
-                </div>
+    <!-- Header -->
+    <header class="border-b border-slate-800 bg-slate-900/50 backdrop-blur sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <i class="fa-solid fa-microchip text-sky-400 text-2xl"></i>
                 <div>
-                    <span class="text-xs font-mono uppercase tracking-widest text-cyan-400 font-semibold">Semillero de Investigación</span>
-                    <h1 class="text-lg sm:text-xl font-bold bg-gradient-to-r from-white via-gray-200 to-cyan-400 bg-clip-text text-transparent">
-                        Multivac 3: Pensar en Paralelo
+                    <h1 class="text-xl font-bold bg-gradient-to-r from-sky-400 to-indigo-400 bg-clip-text text-transparent">
+                        Multivac 3: Pensar en paralelo
                     </h1>
+                    <p class="text-xs text-slate-400">Semillero de Investigación - Teoría de la Escalabilidad</p>
                 </div>
             </div>
-
-            <div class="flex items-center gap-3 text-xs sm:text-sm">
-                <button onclick="toggleGuideModal()" class="px-3 py-1.5 rounded-lg border border-cyan-500/30 bg-cyan-950/40 hover:bg-cyan-900/50 text-cyan-300 font-medium transition flex items-center gap-2">
-                    <i class="fa-brands fa-github"></i> Desplegar en GitHub Pages
-                </button>
+            <div class="flex items-center space-x-4">
+                <span class="text-xs bg-sky-950 text-sky-300 border border-sky-800 px-3 py-1 rounded-full font-mono">
+                    Session 3 &bull; Parallel Processing
+                </span>
             </div>
         </div>
     </header>
 
-    <!-- Main Content Container -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-grow w-full space-y-6">
-
-        <!-- Intro Banner -->
-        <div class="bg-gradient-to-r from-gray-900 via-gray-900/90 to-cyan-950/40 p-5 rounded-2xl border border-gray-800 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 shadow-xl">
-            <div class="space-y-1">
-                <h2 class="text-xl font-bold text-white flex items-center gap-2">
-                    <i class="fa-solid fa-scale-balanced text-cyan-400"></i> Simulación Teórica y Práctica de Escalabilidad
+    <!-- Main Content -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
+        
+        <!-- Controls Sidebar -->
+        <aside class="lg:col-span-4 bg-slate-900 border border-slate-800 rounded-xl p-6 flex flex-col justify-between space-y-6">
+            <div>
+                <h2 class="text-lg font-semibold text-slate-200 border-b border-slate-800 pb-3 mb-6 flex items-center">
+                    <i class="fa-solid fa-sliders text-sky-400 mr-2"></i> Parámetros de Simulación
                 </h2>
-                <p class="text-xs sm:text-sm text-gray-400 max-w-3xl">
-                    Compara la visión pesimista de **Amdahl (1967)** (tamaño de problema fijo) frente a la formulación realista de **Gustafson (1988)** (tamaño de problema escalado), e impulsa un benchmark en tiempo real directo en los núcleos de tu navegador.
+
+                <!-- Control: Number of Processors -->
+                <div class="mb-6">
+                    <div class="flex justify-between items-center mb-2">
+                        <label for="coresInput" class="text-sm font-medium text-slate-300">
+                            Número de Procesadores ($N$)
+                        </label>
+                        <span id="coresVal" class="font-mono text-sky-400 font-bold bg-slate-800 px-2 py-0.5 rounded text-sm">64</span>
+                    </div>
+                    <input type="range" id="coresInput" min="1" max="1024" value="64" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-sky-500">
+                    <div class="flex justify-between text-xs text-slate-500 mt-1 font-mono">
+                        <span>1</span>
+                        <span>256</span>
+                        <span>512</span>
+                        <span>1024</span>
+                    </div>
+                </div>
+
+                <!-- Control: Serial Fraction -->
+                <div class="mb-6">
+                    <div class="flex justify-between items-center mb-2">
+                        <label for="serialInput" class="text-sm font-medium text-slate-300">
+                            Fracción Serial ($s$)
+                        </label>
+                        <span id="serialVal" class="font-mono text-amber-400 font-bold bg-slate-800 px-2 py-0.5 rounded text-sm">5.0%</span>
+                    </div>
+                    <input type="range" id="serialInput" min="0.1" max="20" step="0.1" value="5.0" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-500">
+                    <div class="flex justify-between text-xs text-slate-500 mt-1 font-mono">
+                        <span>0.1%</span>
+                        <span>5%</span>
+                        <span>10%</span>
+                        <span>20%</span>
+                    </div>
+                </div>
+
+                <!-- Formula Displays with MathJax -->
+                <div class="space-y-4 pt-4 border-t border-slate-800">
+                    <div class="bg-slate-950/60 p-4 rounded-lg border border-slate-800">
+                        <div class="text-xs text-slate-400 mb-1 font-semibold">LEY DE AMDAHL (TAMAÑO FIJO)</div>
+                        <div class="text-slate-200 overflow-x-auto py-1">
+                            $$\text{Speedup} = \frac{1}{s + \frac{p}{N}}$$
+                        </div>
+                        <div class="flex justify-between items-baseline mt-2">
+                            <span class="text-xs text-slate-400">Predicción:</span>
+                            <span id="amdahlResult" class="font-mono text-lg font-bold text-rose-400">0.00x</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-950/60 p-4 rounded-lg border border-slate-800">
+                        <div class="text-xs text-slate-400 mb-1 font-semibold">LEY DE GUSTAFSON (TAMAÑO ESCALADO)</div>
+                        <div class="text-slate-200 overflow-x-auto py-1">
+                            $$\text{Scaled Speedup} = N + (1 - N)s$$
+                        </div>
+                        <div class="flex justify-between items-baseline mt-2">
+                            <span class="text-xs text-slate-400">Predicción:</span>
+                            <span id="gustafsonResult" class="font-mono text-lg font-bold text-emerald-400">0.00x</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Benchmark Trigger Button -->
+            <button id="runBenchBtn" class="w-full bg-sky-600 hover:bg-sky-500 text-white font-semibold py-3 px-4 rounded-lg transition-all flex items-center justify-center space-x-2 shadow-lg shadow-sky-900/20">
+                <i class="fa-solid fa-play"></i>
+                <span>Ejecutar Benchmark Sintético en Navegador</span>
+            </button>
+        </aside>
+
+        <!-- Visualization Area -->
+        <section class="lg:col-span-8 flex flex-col space-y-6">
+            
+            <!-- Chart Container -->
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 flex-grow flex flex-col">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-base font-semibold text-slate-200 flex items-center">
+                        <i class="fa-solid fa-chart-line text-sky-400 mr-2"></i>
+                        Comparativa Teórica de Aceleración ($\text{Speedup}$)
+                    </h3>
+                    <span class="text-xs text-slate-500">Escala de procesadores logarítmica/lineal</span>
+                </div>
+                <div class="relative flex-grow min-h-[360px]">
+                    <canvas id="speedupChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Real-time Benchmark Output Box -->
+            <div id="benchBox" class="bg-slate-900 border border-slate-800 rounded-xl p-6">
+                <h3 class="text-base font-semibold text-slate-200 mb-3 flex items-center">
+                    <i class="fa-solid fa-laptop-code text-emerald-400 mr-2"></i>
+                    Resultados Prácticos del Navegador (Web Workers)
+                </h3>
+                <p class="text-sm text-slate-400 mb-4">
+                    Mide el tiempo de cómputo real dividiendo tareas pesadas de matemática trigonométrica en hilos concurrentes locales.
                 </p>
-            </div>
-            <div class="flex gap-2">
-                <span class="px-3 py-1 rounded-full text-xs font-mono bg-rose-500/10 text-rose-400 border border-rose-500/20">Amdahl: Fixed Size</span>
-                <span class="px-3 py-1 rounded-full text-xs font-mono bg-blue-500/10 text-blue-400 border border-blue-500/20">Gustafson: Scaled Size</span>
-            </div>
-        </div>
-
-        <!-- Dashboard Layout Grid -->
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-
-            <!-- LEFT COLUMN: Controls & Parameters (4 cols) -->
-            <div class="lg:col-span-4 space-y-6">
-                
-                <!-- Controls Panel Card -->
-                <div class="bg-gray-900/80 rounded-2xl p-5 border border-gray-800 space-y-5 shadow-lg">
-                    <div class="flex justify-between items-center border-b border-gray-800 pb-3">
-                        <h3 class="font-bold text-gray-200 flex items-center gap-2">
-                            <i class="fa-solid fa-sliders text-cyan-400"></i> Parámetros de Control
-                        </h3>
-                        <button onclick="resetParameters()" class="text-xs text-gray-400 hover:text-cyan-400 transition flex items-center gap-1">
-                            <i class="fa-solid fa-rotate-left"></i> Restablecer
-                        </button>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 font-mono text-sm">
+                    <div class="bg-slate-950 p-3 rounded border border-slate-800">
+                        <div class="text-xs text-slate-500 mb-1">TIEMPO MONOHILO</div>
+                        <div id="benchSingleTime" class="text-slate-200">-- ms</div>
                     </div>
-
-                    <!-- Slider 1: Number of Processors (N) -->
-                    <div class="space-y-2">
-                        <div class="flex justify-between items-center text-sm">
-                            <label for="numProcessors" class="text-gray-300 font-medium">Procesadores / Hilos ($N$):</label>
-                            <span id="displayN" class="font-mono text-cyan-400 font-bold bg-cyan-950/80 px-2 py-0.5 rounded border border-cyan-800/50">16</span>
-                        </div>
-                        <input type="range" id="numProcessors" min="1" max="1024" value="16" class="w-full h-2 bg-gray-800 rounded-lg appearance-none cursor-pointer">
-                        
-                        <!-- Quick N Buttons -->
-                        <div class="flex flex-wrap gap-1.5 pt-1">
-                            <button onclick="setN(1)" class="px-2 py-1 text-xs font-mono bg-gray-800 hover:bg-gray-700 rounded text-gray-300 border border-gray-700">1</button>
-                            <button onclick="setN(4)" class="px-2 py-1 text-xs font-mono bg-gray-800 hover:bg-gray-700 rounded text-gray-300 border border-gray-700">4</button>
-                            <button onclick="setN(8)" class="px-2 py-1 text-xs font-mono bg-gray-800 hover:bg-gray-700 rounded text-gray-300 border border-gray-700">8</button>
-                            <button onclick="setN(16)" class="px-2 py-1 text-xs font-mono bg-gray-800 hover:bg-gray-700 rounded text-gray-300 border border-gray-700">16</button>
-                            <button onclick="setN(64)" class="px-2 py-1 text-xs font-mono bg-gray-800 hover:bg-gray-700 rounded text-gray-300 border border-gray-700">64</button>
-                            <button onclick="setN(256)" class="px-2 py-1 text-xs font-mono bg-gray-800 hover:bg-gray-700 rounded text-gray-300 border border-gray-700">256</button>
-                            <button onclick="setN(1024)" class="px-2 py-1 text-xs font-mono bg-gray-800 hover:bg-gray-700 rounded text-gray-300 border border-gray-700">1024</button>
-                        </div>
+                    <div class="bg-slate-950 p-3 rounded border border-slate-800">
+                        <div class="text-xs text-slate-500 mb-1">TIEMPO MULTIHILO</div>
+                        <div id="benchMultiTime" class="text-slate-200">-- ms</div>
                     </div>
-
-                    <!-- Slider 2: Serial Fraction (s) -->
-                    <div class="space-y-2">
-                        <div class="flex justify-between items-center text-sm">
-                            <label for="serialFraction" class="text-gray-300 font-medium">Fracción Serial ($s$):</label>
-                            <span id="displayS" class="font-mono text-cyan-400 font-bold bg-cyan-950/80 px-2 py-0.5 rounded border border-cyan-800/50">5.0%</span>
-                        </div>
-                        <input type="range" id="serialFraction" min="0" max="0.20" step="0.001" value="0.05" class="w-full h-2 bg-gray-800 rounded-lg appearance-none cursor-pointer">
-                        <div class="flex justify-between text-xs text-gray-500 font-mono">
-                            <span>0% (Ideal)</span>
-                            <span>5%</span>
-                            <span>10%</span>
-                            <span>20% (Pesado)</span>
-                        </div>
-                    </div>
-
-                    <!-- Input 3: Base Problem Size -->
-                    <div class="space-y-2">
-                        <div class="flex justify-between items-center text-sm">
-                            <label for="workloadSize" class="text-gray-300 font-medium">Carga de trabajo base ($W_0$):</label>
-                            <span id="displayW" class="font-mono text-gray-400 text-xs">10M ops</span>
-                        </div>
-                        <select id="workloadSize" class="w-full bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-cyan-500 font-mono">
-                            <option value="5000000">5,000,000 operaciones (Ligera)</option>
-                            <option value="20000000" selected>20,000,000 operaciones (Media)</option>
-                            <option value="50000000">50,000,000 operaciones (Intensiva)</option>
-                        </select>
-                    </div>
-
-                    <!-- Derived Indicators / Equations -->
-                    <div class="bg-gray-950 p-3.5 rounded-xl border border-gray-800 space-y-2 text-xs font-mono">
-                        <div class="flex justify-between text-gray-400">
-                            <span>Fracción Paralela ($p = 1 - s$):</span>
-                            <span id="displayP" class="text-emerald-400 font-bold">95.0%</span>
-                        </div>
-                        <div class="flex justify-between text-gray-400">
-                            <span>Límite Amdahl ($N \to \infty$):</span>
-                            <span id="displayAmdahlLimit" class="text-rose-400 font-bold">20.00x</span>
-                        </div>
+                    <div class="bg-slate-950 p-3 rounded border border-slate-800">
+                        <div class="text-xs text-slate-500 mb-1">SPEEDUP OBTENIDO</div>
+                        <div id="benchSpeedup" class="text-sky-400 font-bold">--</div>
                     </div>
                 </div>
-
-                <!-- Synthetic Benchmark Execution Box -->
-                <div class="bg-gradient-to-b from-gray-900 to-gray-950 rounded-2xl p-5 border border-cyan-900/40 space-y-4 shadow-lg glow-neon">
-                    <div class="flex items-center gap-2 text-cyan-300 font-bold text-sm">
-                        <i class="fa-solid fa-stopwatch text-cyan-400"></i> Módulo Práctico en Navegador
-                    </div>
-                    <p class="text-xs text-gray-400 leading-relaxed">
-                        Ejecuta una simulación multihilo sintética utilizando Web Workers reales en este equipo para contrastar las curvas teóricas.
-                    </p>
-
-                    <button id="btnRunBenchmark" onclick="runSyntheticBenchmark()" class="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-sm shadow-lg shadow-cyan-600/30 transition flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-play"></i> Ejecutar Benchmark Sintético Real
-                    </button>
-
-                    <!-- Benchmark Progress & Output -->
-                    <div id="benchmarkStatus" class="hidden space-y-2 text-xs">
-                        <div class="flex justify-between text-gray-300 font-mono">
-                            <span id="benchPhase">Procesando...</span>
-                            <span id="benchPercent">0%</span>
-                        </div>
-                        <div class="w-full bg-gray-800 h-2 rounded-full overflow-hidden">
-                            <div id="benchProgressBar" class="bg-cyan-500 h-full w-0 transition-all duration-150"></div>
-                        </div>
-                    </div>
-
-                    <div id="benchmarkResults" class="hidden bg-gray-950 p-3 rounded-xl border border-gray-800 text-xs font-mono space-y-1">
-                        <div class="text-gray-400 font-sans text-2xs uppercase tracking-wider font-semibold border-b border-gray-800 pb-1 mb-1 text-cyan-400">Resultado Medido Real</div>
-                        <div class="flex justify-between">
-                            <span>Tiempo Monohilo (1 thread):</span>
-                            <span id="resTimeT1" class="text-gray-200">-- ms</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span>Tiempo Multihilo (<span id="resWorkerCount">N</span> threads):</span>
-                            <span id="resTimeTN" class="text-gray-200">-- ms</span>
-                        </div>
-                        <div class="flex justify-between font-bold border-t border-gray-800/60 pt-1 mt-1">
-                            <span>Speedup Medido:</span>
-                            <span id="resRealSpeedup" class="text-emerald-400">--x</span>
-                        </div>
-                    </div>
-                </div>
-
             </div>
 
-            <!-- RIGHT COLUMN: Results Metrics & Interactive Charts (8 cols) -->
-            <div class="lg:col-span-8 space-y-6">
-
-                <!-- Metric Summary Cards Grid -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    
-                    <!-- Amdahl Card -->
-                    <div class="bg-gray-900/90 rounded-2xl p-5 border border-rose-900/40 glow-amdahl relative overflow-hidden space-y-3">
-                        <div class="absolute -right-6 -bottom-6 text-rose-500/10 text-8xl font-bold select-none pointer-events-none">A</div>
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <span class="text-xs uppercase font-mono tracking-widest text-rose-400 font-bold">Ley de Amdahl</span>
-                                <h4 class="text-xs text-gray-400">Modelo de Tamaño Fijo</h4>
-                            </div>
-                            <span class="p-2 bg-rose-500/10 text-rose-400 rounded-lg text-xs font-mono border border-rose-500/20">Fixed Workload</span>
-                        </div>
-                        <div>
-                            <div class="text-xs text-gray-400">Speedup Esperado:</div>
-                            <div id="metricAmdahlSpeedup" class="text-3xl font-extrabold text-rose-400 font-mono">11.43x</div>
-                        </div>
-                        <div class="flex justify-between items-center text-xs text-gray-400 border-t border-gray-800 pt-2 font-mono">
-                            <span>Eficiencia Teórica:</span>
-                            <span id="metricAmdahlEfficiency" class="text-gray-200 font-bold">71.4%</span>
-                        </div>
-                    </div>
-
-                    <!-- Gustafson Card -->
-                    <div class="bg-gray-900/90 rounded-2xl p-5 border border-blue-900/40 glow-gustafson relative overflow-hidden space-y-3">
-                        <div class="absolute -right-6 -bottom-6 text-blue-500/10 text-8xl font-bold select-none pointer-events-none">G</div>
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <span class="text-xs uppercase font-mono tracking-widest text-blue-400 font-bold">Ley de Gustafson</span>
-                                <h4 class="text-xs text-gray-400">Modelo Escalado (Weak Scaling)</h4>
-                            </div>
-                            <span class="p-2 bg-blue-500/10 text-blue-400 rounded-lg text-xs font-mono border border-blue-500/20">Scaled Workload</span>
-                        </div>
-                        <div>
-                            <div class="text-xs text-gray-400">Scaled Speedup Esperado:</div>
-                            <div id="metricGustafsonSpeedup" class="text-3xl font-extrabold text-blue-400 font-mono">15.25x</div>
-                        </div>
-                        <div class="flex justify-between items-center text-xs text-gray-400 border-t border-gray-800 pt-2 font-mono">
-                            <span>Eficiencia Teórica:</span>
-                            <span id="metricGustafsonEfficiency" class="text-gray-200 font-bold">95.3%</span>
-                        </div>
-                    </div>
-
-                </div>
-
-                <!-- Interactive Chart Panel -->
-                <div class="bg-gray-900/80 rounded-2xl p-5 border border-gray-800 space-y-4 shadow-xl">
-                    <div class="flex flex-wrap items-center justify-between gap-2 border-b border-gray-800 pb-3">
-                        <div>
-                            <h3 class="font-bold text-gray-200 flex items-center gap-2">
-                                <i class="fa-solid fa-chart-line text-cyan-400"></i> Comparativa de Aceleración (Speedup vs Procesadores N)
-                            </h3>
-                            <p class="text-xs text-gray-400">Curvas de respuesta para la fracción serial activa ($s = <span id="chartSLabel">0.05</span>$)</p>
-                        </div>
-                        <div class="flex items-center gap-3 text-xs font-mono">
-                            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-rose-500 inline-block"></span> Amdahl</span>
-                            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-blue-500 inline-block"></span> Gustafson</span>
-                            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-emerald-400 inline-block"></span> Benchmark Real</span>
-                        </div>
-                    </div>
-
-                    <!-- Canvas Box -->
-                    <div class="relative w-full h-[360px]">
-                        <canvas id="speedupChart"></canvas>
-                    </div>
-                </div>
-
-                <!-- Paper Context & Analytical Formulas Box -->
-                <div class="bg-gray-900/60 rounded-2xl p-5 border border-gray-800 space-y-3">
-                    <h4 class="font-bold text-xs uppercase tracking-wider text-cyan-400 flex items-center gap-2">
-                        <i class="fa-solid fa-book-open"></i> Resumen Matemático del Paper (Gustafson, 1988)
-                    </h4>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                        <div class="bg-gray-950 p-3 rounded-xl border border-gray-800 space-y-1">
-                            <span class="font-bold text-rose-400">Fórmula de Amdahl:</span>
-                            <p class="font-mono text-gray-300 text-sm">$$\text{Speedup} = \frac{1}{s + \frac{p}{N}}$$</p>
-                            <p class="text-gray-400 text-2xs leading-normal">
-                                Asume que el trabajo paralelo ($p$) no cambia. Cuando $N \to \infty$, la aceleración se atasca asintóticamente en $1/s$.
-                            </p>
-                        </div>
-                        <div class="bg-gray-950 p-3 rounded-xl border border-gray-800 space-y-1">
-                            <span class="font-bold text-blue-400">Fórmula de Gustafson:</span>
-                            <p class="font-mono text-gray-300 text-sm">$$\text{Scaled Speedup} = N + (1 - N)s$$</p>
-                            <p class="text-gray-400 text-2xs leading-normal">
-                                Asume tiempo total constante en el hardware paralelo. La aceleración crece linealmente con los procesadores $N$.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-
-        </div>
-
+        </section>
     </main>
 
     <!-- Footer -->
-    <footer class="border-t border-gray-800 bg-gray-950 py-4 text-center text-xs text-gray-500">
-        <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-2">
-            <span>Multivac 3: Pensar en Paralelo &bull; Semillero de Modelos Generativos</span>
-            <span class="font-mono text-gray-400">Universidad Nacional de Colombia</span>
-        </div>
+    <footer class="border-t border-slate-800 bg-slate-900/30 py-4 text-center text-xs text-slate-500">
+        Semillero de Investigación de Modelos Generativos &bull; Universidad Nacional de Colombia
     </footer>
 
-    <!-- GitHub Pages Guide Modal -->
-    <div id="guideModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-gray-900 border border-gray-800 rounded-2xl max-w-2xl w-full p-6 space-y-4 shadow-2xl relative">
-            <button onclick="toggleGuideModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white text-lg">
-                <i class="fa-solid fa-xmark"></i>
-            </button>
-            <div class="flex items-center gap-3 border-b border-gray-800 pb-3">
-                <i class="fa-brands fa-github text-2xl text-cyan-400"></i>
-                <h3 class="font-bold text-lg text-white">Guía de Despliegue en GitHub Pages</h3>
-            </div>
-            
-            <div class="space-y-3 text-xs sm:text-sm text-gray-300 overflow-y-auto max-h-[60vh] pr-2">
-                <p>Para publicar esta aplicación interactiva en tu repositorio y compartirla con todos los asistentes del semillero, sigue estos pasos:</p>
-                
-                <ol class="list-decimal list-inside space-y-2 text-gray-300 font-sans">
-                    <li><strong class="text-cyan-400">Crear archivo index.html:</strong> Guarda todo el código de esta página en un archivo llamado <code class="bg-gray-950 text-cyan-300 font-mono px-1.5 py-0.5 rounded">index.html</code> en la raíz de tu repositorio.</li>
-                    <li><strong class="text-cyan-400">Subir al repositorio:</strong> Haz commit y push del archivo a la rama principal (<code class="bg-gray-950 text-gray-300 font-mono px-1.5 py-0.5 rounded">main</code> o <code class="bg-gray-950 text-gray-300 font-mono px-1.5 py-0.5 rounded">master</code>).</li>
-                    <li><strong class="text-cyan-400">Ir a Ajustes:</strong> En GitHub, navega a la pestaña <strong>Settings</strong> de tu repositorio.</li>
-                    <li><strong class="text-cyan-400">Activar GitHub Pages:</strong> En la barra lateral izquierda, busca la sección <strong>Pages</strong> (en Code and automation).</li>
-                    <li><strong class="text-cyan-400">Seleccionar la rama:</strong> En la opción <em>Source</em>, selecciona <strong>Deploy from a branch</strong>, elige la rama <code class="bg-gray-950 text-gray-300 font-mono px-1 py-0.5 rounded">main</code> y la carpeta <code class="bg-gray-950 text-gray-300 font-mono px-1 py-0.5 rounded">/ (root)</code>. Haz clic en <strong>Save</strong>.</li>
-                    <li><strong class="text-cyan-400">¡Listo!</strong> En 1-2 minutos tu web estará activa en una URL del tipo: <code class="bg-gray-950 text-emerald-400 font-mono px-1.5 py-0.5 rounded">https://tu-usuario.github.io/tu-repositorio/</code>.</li>
-                </ol>
-            </div>
-
-            <div class="flex justify-end pt-2">
-                <button onclick="toggleGuideModal()" class="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg font-bold text-xs">Entendido</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Application JavaScript Logic -->
+    <!-- Script Logic -->
     <script>
-        // DOM Elements
-        const sliderN = document.getElementById('numProcessors');
-        const sliderS = document.getElementById('serialFraction');
-        const selectW = document.getElementById('workloadSize');
+        // Data and Chart initialization
+        const coresInput = document.getElementById('coresInput');
+        const serialInput = document.getElementById('serialInput');
+        const coresVal = document.getElementById('coresVal');
+        const serialVal = document.getElementById('serialVal');
+        const amdahlResult = document.getElementById('amdahlResult');
+        const gustafsonResult = document.getElementById('gustafsonResult');
 
-        const displayN = document.getElementById('displayN');
-        const displayS = document.getElementById('displayS');
-        const displayP = document.getElementById('displayP');
-        const displayW = document.getElementById('displayW');
-        const displayAmdahlLimit = document.getElementById('displayAmdahlLimit');
-        const chartSLabel = document.getElementById('chartSLabel');
+        const ctx = document.getElementById('speedupChart').getContext('2d');
 
-        const metricAmdahlSpeedup = document.getElementById('metricAmdahlSpeedup');
-        const metricAmdahlEfficiency = document.getElementById('metricAmdahlEfficiency');
-        const metricGustafsonSpeedup = document.getElementById('metricGustafsonSpeedup');
-        const metricGustafsonEfficiency = document.getElementById('metricGustafsonEfficiency');
+        // Generate points for charts
+        function calculateData(maxN, s) {
+            const labels = [];
+            const amdahlData = [];
+            const gustafsonData = [];
+            const linearData = [];
 
-        let speedupChart = null;
-        let realBenchmarkPoints = [];
+            const step = Math.max(1, Math.floor(maxN / 30));
+            for (let n = 1; n <= maxN; n += step) {
+                labels.push(n);
+                
+                // Amdahl: Speedup = 1 / (s + (1-s)/N)
+                const p = 1 - s;
+                const amdahl = 1 / (s + (p / n));
+                amdahlData.push(amdahl.toFixed(2));
 
-        // Calculation Helpers
-        function calcAmdahl(N, s) {
-            const p = 1.0 - s;
-            return 1.0 / (s + (p / N));
+                // Gustafson: Scaled Speedup = N + (1-N)s
+                const gustafson = n + (1 - n) * s;
+                gustafsonData.push(gustafson.toFixed(2));
+
+                // Ideal Linear Speedup = N
+                linearData.push(n);
+            }
+
+            return { labels, amdahlData, gustafsonData, linearData };
         }
 
-        function calcGustafson(N, s) {
-            return N + (1.0 - N) * s;
-        }
+        let chartData = calculateData(parseInt(coresInput.value), parseFloat(serialInput.value) / 100);
 
-        function setN(val) {
-            sliderN.value = val;
-            updateDashboard();
-        }
-
-        function resetParameters() {
-            sliderN.value = 16;
-            sliderS.value = 0.05;
-            selectW.value = 20000000;
-            realBenchmarkPoints = [];
-            document.getElementById('benchmarkResults').classList.add('hidden');
-            updateDashboard();
-        }
-
-        function toggleGuideModal() {
-            const modal = document.getElementById('guideModal');
-            modal.classList.toggle('hidden');
-        }
-
-        // Initialize Chart.js Instance
-        function initChart() {
-            const ctx = document.getElementById('speedupChart').getContext('2d');
-            speedupChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: [],
-                    datasets: [
-                        {
-                            label: 'Ley de Gustafson (Scaled Speedup)',
-                            borderColor: '#3b82f6',
-                            backgroundColor: 'rgba(59, 130, 246, 0.08)',
-                            borderWidth: 3,
-                            fill: true,
-                            tension: 0.1,
-                            data: []
-                        },
-                        {
-                            label: "Ley de Amdahl (Speedup)",
-                            borderColor: '#f43f5e',
-                            backgroundColor: 'rgba(244, 63, 94, 0.08)',
-                            borderWidth: 3,
-                            fill: true,
-                            tension: 0.1,
-                            data: []
-                        },
-                        {
-                            label: 'Benchmark Medido (Real)',
-                            borderColor: '#34d399',
-                            backgroundColor: '#34d399',
-                            pointRadius: 6,
-                            pointHoverRadius: 8,
-                            showLine: false,
-                            data: []
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        x: {
-                            type: 'linear',
-                            title: { display: true, text: 'Número de Procesadores / Hilos (N)', color: '#94a3b8' },
-                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
-                            ticks: { color: '#94a3b8' }
-                        },
-                        y: {
-                            title: { display: true, text: 'Aceleración (Speedup)', color: '#94a3b8' },
-                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
-                            ticks: { color: '#94a3b8' },
-                            beginAtZero: true
-                        }
+        const chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: chartData.labels,
+                datasets: [
+                    {
+                        label: 'Ley de Gustafson (Tamaño Escalado)',
+                        data: chartData.gustafsonData,
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.05)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.1
                     },
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            backgroundColor: '#0f172a',
-                            titleColor: '#06b6d4',
-                            bodyColor: '#e2e8f0',
-                            borderColor: '#1e293b',
-                            borderWidth: 1,
-                            padding: 10
-                        }
+                    {
+                        label: 'Ley de Amdahl (Tamaño Fijo)',
+                        data: chartData.amdahlData,
+                        borderColor: '#f43f5e',
+                        backgroundColor: 'rgba(244, 63, 94, 0.05)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.1
+                    },
+                    {
+                        label: 'Aceleración Ideal (Lineal)',
+                        data: chartData.linearData,
+                        borderColor: '#64748b',
+                        borderDash: [5, 5],
+                        borderWidth: 1.5,
+                        pointRadius: 0,
+                        fill: false
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        title: { display: true, text: 'Número de Procesadores (N)', color: '#94a3b8' },
+                        grid: { color: '#1e293b' },
+                        ticks: { color: '#64748b' }
+                    },
+                    y: {
+                        title: { display: true, text: 'Aceleración (Speedup Factor)', color: '#94a3b8' },
+                        grid: { color: '#1e293b' },
+                        ticks: { color: '#64748b' }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        labels: { color: '#e2e8f0' }
                     }
                 }
-            });
-        }
-
-        // Main Dashboard Update Loop
-        function updateDashboard() {
-            const N = parseInt(sliderN.value);
-            const s = parseFloat(sliderS.value);
-            const p = 1.0 - s;
-
-            // Text Updates
-            displayN.innerText = N;
-            displayS.innerText = (s * 100).toFixed(1) + '%';
-            displayP.innerText = (p * 100).toFixed(1) + '%';
-            chartSLabel.innerText = s.toFixed(3);
-
-            const amdahlLimit = s > 0 ? (1.0 / s).toFixed(2) + 'x' : '∞';
-            displayAmdahlLimit.innerText = amdahlLimit;
-
-            const selectedOption = selectW.options[selectW.selectedIndex];
-            displayW.innerText = (parseInt(selectW.value)/1000000).toFixed(0) + 'M ops';
-
-            // Metrics Calculations
-            const amdahlSpeedup = calcAmdahl(N, s);
-            const amdahlEff = (amdahlSpeedup / N) * 100;
-
-            const gustafsonSpeedup = calcGustafson(N, s);
-            const gustafsonEff = (gustafsonSpeedup / N) * 100;
-
-            metricAmdahlSpeedup.innerText = amdahlSpeedup.toFixed(2) + 'x';
-            metricAmdahlEfficiency.innerText = amdahlEff.toFixed(1) + '%';
-
-            metricGustafsonSpeedup.innerText = gustafsonSpeedup.toFixed(2) + 'x';
-            metricGustafsonEfficiency.innerText = gustafsonEff.toFixed(1) + '%';
-
-            // Generate Chart Curves for range 1..N_max
-            const nRange = [];
-            const maxNChart = Math.max(N, 32);
-            const step = Math.max(1, Math.floor(maxNChart / 40));
-
-            for (let i = 1; i <= maxNChart; i += step) {
-                nRange.push(i);
             }
-            if (nRange[nRange.length - 1] !== maxNChart) nRange.push(maxNChart);
-            if (!nRange.includes(N)) { nRange.push(N); nRange.sort((a,b)=>a-b); }
-
-            const amdahlData = nRange.map(n => ({ x: n, y: calcAmdahl(n, s) }));
-            const gustafsonData = nRange.map(n => ({ x: n, y: calcGustafson(n, s) }));
-
-            if (speedupChart) {
-                speedupChart.data.datasets[0].data = gustafsonData;
-                speedupChart.data.datasets[1].data = amdahlData;
-                speedupChart.data.datasets[2].data = realBenchmarkPoints;
-                speedupChart.update('none');
-            }
-        }
-
-        // Synthetic In-Browser Benchmark Execution using Inline Web Worker / Async Tasks
-        async function runSyntheticBenchmark() {
-            const btn = document.getElementById('btnRunBenchmark');
-            const statusBox = document.getElementById('benchmarkStatus');
-            const resultsBox = document.getElementById('benchmarkResults');
-            const progressBar = document.getElementById('benchProgressBar');
-            const benchPhase = document.getElementById('benchPhase');
-            const benchPercent = document.getElementById('benchPercent');
-
-            btn.disabled = true;
-            btn.classList.add('opacity-50');
-            statusBox.classList.remove('hidden');
-            resultsBox.classList.add('hidden');
-
-            const N = parseInt(sliderN.value);
-            const s = parseFloat(sliderS.value);
-            const totalWork = parseInt(selectW.value);
-
-            const serialOps = Math.floor(totalWork * s);
-            const parallelOps = Math.floor(totalWork * (1.0 - s));
-
-            // Heavy Workload Calculation Block
-            function doComputation(iterations) {
-                let val = 0;
-                for (let i = 0; i < iterations; i++) {
-                    val += Math.sin(i) * Math.cos(i);
-                }
-                return val;
-            }
-
-            // Phase 1: Benchmark Single Thread (N = 1)
-            benchPhase.innerText = 'Midiendo en 1 Hilo (T1)...';
-            benchPercent.innerText = '20%';
-            progressBar.style.width = '20%';
-            await new Promise(r => setTimeout(r, 100));
-
-            const startT1 = performance.now();
-            doComputation(serialOps);
-            doComputation(parallelOps);
-            const endT1 = performance.now();
-            const timeT1 = endT1 - startT1;
-
-            // Phase 2: Benchmark Simulated Multithreaded Execution (TN)
-            benchPhase.innerText = `Simulando ejecución en ${N} Hilos (TN)...`;
-            benchPercent.innerText = '70%';
-            progressBar.style.width = '70%';
-            await new Promise(r => setTimeout(r, 100));
-
-            const startTN = performance.now();
-            // Serial section runs sequentially
-            doComputation(serialOps);
-
-            // Parallel section divided among N workers (simulated batching)
-            const opsPerThread = Math.floor(parallelOps / N);
-            const workerPromises = [];
-
-            for (let w = 0; w < N; w++) {
-                workerPromises.push(new Promise(resolve => {
-                    setTimeout(() => {
-                        doComputation(opsPerThread);
-                        resolve();
-                    }, 0);
-                }));
-            }
-            await Promise.all(workerPromises);
-            const endTN = performance.now();
-            const timeTN = endTN - startTN;
-
-            // Phase 3: Finalize and Plot Results
-            benchPhase.innerText = 'Finalizado!';
-            benchPercent.innerText = '100%';
-            progressBar.style.width = '100%';
-
-            const measuredSpeedup = timeT1 / (timeTN || 1);
-
-            document.getElementById('resTimeT1').innerText = `${timeT1.toFixed(1)} ms`;
-            document.getElementById('resTimeTN').innerText = `${timeTN.toFixed(1)} ms`;
-            document.getElementById('resWorkerCount').innerText = N;
-            document.getElementById('resRealSpeedup').innerText = `${measuredSpeedup.toFixed(2)}x`;
-
-            // Record point in chart
-            realBenchmarkPoints.push({ x: N, y: measuredSpeedup });
-
-            setTimeout(() => {
-                statusBox.classList.add('hidden');
-                resultsBox.classList.remove('hidden');
-                btn.disabled = false;
-                btn.classList.remove('opacity-50');
-                updateDashboard();
-            }, 500);
-        }
-
-        // Initialize App on DOM Load
-        window.addEventListener('DOMContentLoaded', () => {
-            initChart();
-            updateDashboard();
-
-            sliderN.addEventListener('input', updateDashboard);
-            sliderS.addEventListener('input', updateDashboard);
-            selectW.addEventListener('change', updateDashboard);
         });
+
+        function updateSimulation() {
+            const n = parseInt(coresInput.value);
+            const s = parseFloat(serialInput.value) / 100;
+            const p = 1 - s;
+
+            coresVal.innerText = n;
+            serialVal.innerText = (s * 100).toFixed(1) + '%';
+
+            // Amdahl calculation
+            const amdahl = 1 / (s + (p / n));
+            amdahlResult.innerText = amdahl.toFixed(2) + 'x';
+
+            // Gustafson calculation
+            const gustafson = n + (1 - n) * s;
+            gustafsonResult.innerText = gustafson.toFixed(2) + 'x';
+
+            // Update chart
+            const newData = calculateData(n, s);
+            chart.data.labels = newData.labels;
+            chart.data.datasets[0].data = newData.gustafsonData;
+            chart.data.datasets[1].data = newData.amdahlData;
+            chart.data.datasets[2].data = newData.linearData;
+            chart.update();
+
+            // Re-render MathJax dynamic elements if necessary
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                window.MathJax.typesetPromise();
+            }
+        }
+
+        coresInput.addEventListener('input', updateSimulation);
+        serialInput.addEventListener('input', updateSimulation);
+
+        // Web Worker Benchmark Script
+        const benchBtn = document.getElementById('runBenchBtn');
+        benchBtn.addEventListener('click', () => {
+            benchBtn.disabled = true;
+            benchBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Calculando en hilos...</span>';
+
+            const numWorkers = Math.min(navigator.hardwareConcurrency || 4, parseInt(coresInput.value));
+            const iterations = 50000000;
+
+            // Worker blob code
+            const workerCode = `
+                self.onmessage = function(e) {
+                    const count = e.data;
+                    let val = 0;
+                    for(let i = 0; i < count; i++) {
+                        val += Math.sin(i) * Math.cos(i);
+                    }
+                    self.postMessage(val);
+                }
+            `;
+
+            const blob = new Blob([workerCode], { type: 'application/javascript' });
+            const workerUrl = URL.createObjectURL(blob);
+
+            // Single-thread benchmark execution
+            const startSingle = performance.now();
+            let val = 0;
+            for(let i = 0; i < iterations; i++) {
+                val += Math.sin(i) * Math.cos(i);
+            }
+            const endSingle = performance.now();
+            const timeSingle = endSingle - startSingle;
+            document.getElementById('benchSingleTime').innerText = timeSingle.toFixed(1) + ' ms';
+
+            // Multi-thread benchmark execution
+            const startMulti = performance.now();
+            let completed = 0;
+            const perWorker = Math.floor(iterations / numWorkers);
+
+            for(let w = 0; w < numWorkers; w++) {
+                const worker = new Worker(workerUrl);
+                worker.postMessage(perWorker);
+                worker.onmessage = () => {
+                    completed++;
+                    worker.terminate();
+                    if(completed === numWorkers) {
+                        const endMulti = performance.now();
+                        const timeMulti = endMulti - startMulti;
+                        document.getElementById('benchMultiTime').innerText = timeMulti.toFixed(1) + ' ms (' + numWorkers + ' hilos)';
+                        
+                        const realSpeedup = timeSingle / timeMulti;
+                        document.getElementById('benchSpeedup').innerText = realSpeedup.toFixed(2) + 'x';
+
+                        benchBtn.disabled = false;
+                        benchBtn.innerHTML = '<i class="fa-solid fa-play"></i> <span>Ejecutar Benchmark Sintético en Navegador</span>';
+                        URL.revokeObjectURL(workerUrl);
+                    }
+                }
+            }
+        });
+
+        // Initial setup
+        updateSimulation();
     </script>
 </body>
 </html>
