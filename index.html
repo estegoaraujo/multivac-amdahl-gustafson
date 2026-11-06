@@ -77,7 +77,7 @@
                 <div class="mb-6">
                     <div class="flex justify-between items-center mb-2">
                         <label for="coresInput" class="text-sm font-medium text-slate-300">
-                            Número de Procesadores ($N$)
+                            Número de Procesadores ($N$):
                         </label>
                         <span id="coresVal" class="font-mono text-sky-400 font-bold bg-slate-800 px-2 py-0.5 rounded text-sm">64</span>
                     </div>
@@ -94,7 +94,7 @@
                 <div class="mb-6">
                     <div class="flex justify-between items-center mb-2">
                         <label for="serialInput" class="text-sm font-medium text-slate-300">
-                            Fracción Serial ($s$)
+                            Fracción Serial ($s$):
                         </label>
                         <span id="serialVal" class="font-mono text-amber-400 font-bold bg-slate-800 px-2 py-0.5 rounded text-sm">5.0%</span>
                     </div>
@@ -202,7 +202,6 @@
 
         const ctx = document.getElementById('speedupChart').getContext('2d');
 
-        // Generate points for charts
         function calculateData(maxN, s) {
             const labels = [];
             const amdahlData = [];
@@ -213,16 +212,13 @@
             for (let n = 1; n <= maxN; n += step) {
                 labels.push(n);
                 
-                // Amdahl: Speedup = 1 / (s + (1-s)/N)
                 const p = 1 - s;
                 const amdahl = 1 / (s + (p / n));
                 amdahlData.push(amdahl.toFixed(2));
 
-                // Gustafson: Scaled Speedup = N + (1-N)s
                 const gustafson = n + (1 - n) * s;
                 gustafsonData.push(gustafson.toFixed(2));
 
-                // Ideal Linear Speedup = N
                 linearData.push(n);
             }
 
@@ -296,15 +292,12 @@
             coresVal.innerText = n;
             serialVal.innerText = (s * 100).toFixed(1) + '%';
 
-            // Amdahl calculation
             const amdahl = 1 / (s + (p / n));
             amdahlResult.innerText = amdahl.toFixed(2) + 'x';
 
-            // Gustafson calculation
             const gustafson = n + (1 - n) * s;
             gustafsonResult.innerText = gustafson.toFixed(2) + 'x';
 
-            // Update chart
             const newData = calculateData(n, s);
             chart.data.labels = newData.labels;
             chart.data.datasets[0].data = newData.gustafsonData;
@@ -312,7 +305,6 @@
             chart.data.datasets[2].data = newData.linearData;
             chart.update();
 
-            // Re-render MathJax dynamic elements if necessary
             if (window.MathJax && window.MathJax.typesetPromise) {
                 window.MathJax.typesetPromise();
             }
@@ -321,7 +313,6 @@
         coresInput.addEventListener('input', updateSimulation);
         serialInput.addEventListener('input', updateSimulation);
 
-        // Web Worker Benchmark Script
         const benchBtn = document.getElementById('runBenchBtn');
         benchBtn.addEventListener('click', () => {
             benchBtn.disabled = true;
@@ -330,7 +321,6 @@
             const numWorkers = Math.min(navigator.hardwareConcurrency || 4, parseInt(coresInput.value));
             const iterations = 50000000;
 
-            // Worker blob code
             const workerCode = `
                 self.onmessage = function(e) {
                     const count = e.data;
@@ -345,7 +335,6 @@
             const blob = new Blob([workerCode], { type: 'application/javascript' });
             const workerUrl = URL.createObjectURL(blob);
 
-            // Single-thread benchmark execution
             const startSingle = performance.now();
             let val = 0;
             for(let i = 0; i < iterations; i++) {
@@ -355,7 +344,6 @@
             const timeSingle = endSingle - startSingle;
             document.getElementById('benchSingleTime').innerText = timeSingle.toFixed(1) + ' ms';
 
-            // Multi-thread benchmark execution
             const startMulti = performance.now();
             let completed = 0;
             const perWorker = Math.floor(iterations / numWorkers);
@@ -382,7 +370,6 @@
             }
         });
 
-        // Initial setup
         updateSimulation();
     </script>
 </body>
