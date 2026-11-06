@@ -31,7 +31,7 @@
     <script>
         window.MathJax = {
             tex: {
-                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                inlineMath: [['\\(', '\\)']],
                 displayMath: [['$$', '$$'], ['\\[', '\\]']]
             },
             svg: {
@@ -77,7 +77,7 @@
                 <div class="mb-6">
                     <div class="flex justify-between items-center mb-2">
                         <label for="coresInput" class="text-sm font-medium text-slate-300">
-                            Número de Procesadores ($N$):
+                            Número de Procesadores (\(N\)):
                         </label>
                         <span id="coresVal" class="font-mono text-sky-400 font-bold bg-slate-800 px-2 py-0.5 rounded text-sm">64</span>
                     </div>
@@ -94,7 +94,7 @@
                 <div class="mb-6">
                     <div class="flex justify-between items-center mb-2">
                         <label for="serialInput" class="text-sm font-medium text-slate-300">
-                            Fracción Serial ($s$):
+                            Fracción Serial (\(s\)):
                         </label>
                         <span id="serialVal" class="font-mono text-amber-400 font-bold bg-slate-800 px-2 py-0.5 rounded text-sm">5.0%</span>
                     </div>
@@ -148,7 +148,7 @@
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="text-base font-semibold text-slate-200 flex items-center">
                         <i class="fa-solid fa-chart-line text-sky-400 mr-2"></i>
-                        Comparativa Teórica de Aceleración ($\text{Speedup}$)
+                        Comparativa Teórica de Aceleración (\(\text{Speedup}\))
                     </h3>
                     <span class="text-xs text-slate-500">Escala de procesadores logarítmica/lineal</span>
                 </div>
@@ -192,7 +192,6 @@
 
     <!-- Script Logic -->
     <script>
-        // Data and Chart initialization
         const coresInput = document.getElementById('coresInput');
         const serialInput = document.getElementById('serialInput');
         const coresVal = document.getElementById('coresVal');
